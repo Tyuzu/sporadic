@@ -1,30 +1,38 @@
 import type { ComponentChild, EventHandlers, EventMap, Props } from '../types';
 
-export class PubSub<T extends Record<string, any> = Record<string, any>> {
-  private events: Map<keyof T, Set<(data: any) => void>> = new Map();
+export type PubSubInstance<T extends Record<string, any> = Record<string, any>> = {
+  on: <K extends keyof T>(event: K, cb: (data: T[K]) => void) => () => void;
+  off: <K extends keyof T>(event: K, cb: (data: T[K]) => void) => void;
+  emit: <K extends keyof T>(event: K, data: T[K]) => void;
+};
 
-  on<K extends keyof T>(event: K, cb: (data: T[K]) => void): () => void {
-    if (!this.events.has(event)) {
-      this.events.set(event, new Set());
+export function createPubSub<T extends Record<string, any> = Record<string, any>>(): PubSubInstance<T> {
+  const events = new Map<keyof T, Set<(data: any) => void>>();
+
+  const on = <K extends keyof T>(event: K, cb: (data: T[K]) => void): (() => void) => {
+    if (!events.has(event)) {
+      events.set(event, new Set());
     }
-    this.events.get(event)!.add(cb);
-    return () => this.off(event, cb);
-  }
+    events.get(event)!.add(cb as (data: any) => void);
+    return () => off(event, cb);
+  };
 
-  off<K extends keyof T>(event: K, cb: (data: T[K]) => void): void {
-    const subs = this.events.get(event);
+  const off = <K extends keyof T>(event: K, cb: (data: T[K]) => void): void => {
+    const subs = events.get(event);
     if (subs) {
-      subs.delete(cb);
-      if (subs.size === 0) this.events.delete(event);
+      subs.delete(cb as (data: any) => void);
+      if (subs.size === 0) events.delete(event);
     }
-  }
+  };
 
-  emit<K extends keyof T>(event: K, data: T[K]): void {
-    const subs = this.events.get(event);
+  const emit = <K extends keyof T>(event: K, data: T[K]): void => {
+    const subs = events.get(event);
     if (subs) {
       subs.forEach((cb) => cb(data));
     }
-  }
+  };
+
+  return { on, off, emit };
 }
 
 export function createElement<K extends keyof HTMLElementTagNameMap>(

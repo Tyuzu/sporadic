@@ -1,18 +1,16 @@
-import { Router } from './src/router/router';
+import { createRouter } from './src/router/router';
 import { authGuard } from './src/middleware/authGuard';
 import { Navigation, HomePage, LoginPage, UserPage, DashboardPage, DragDemoPage, ToastContainer } from './src/components/views';
 import { createElement } from './src/lib/dom';
 
 const app = document.getElementById('app') || document.body;
-app.appendChild(Navigation());
-
 const mainView = createElement('main', { id: 'router-view' });
 const toast = ToastContainer();
+const router = createRouter(mainView);
 
+app.appendChild(Navigation(router));
 app.appendChild(mainView);
 app.appendChild(toast);
-
-const router = new Router(mainView);
 
 router
   .add('/', () => HomePage(router))

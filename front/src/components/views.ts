@@ -1,53 +1,165 @@
 import { apiFetch, createElement } from '../lib/dom';
-import { bus, getRedirectAfterLogin, isAuthenticated, setAuthenticated, setRedirectAfterLogin } from '../state/store';
+import {
+  bus,
+  getRedirectAfterLogin,
+  getRememberMe,
+  isAuthenticated,
+  setAuthenticated,
+  setRedirectAfterLogin,
+  setRememberMe
+} from '../state/store';
 import type { RouteContext } from '../types';
-import type { Router } from '../router/router';
+import type { RouterInstance } from '../router/router';
 
-export function Navigation(): HTMLElement {
-  return createElement(
-    'nav',
-    { style: { display: 'flex', gap: '1rem', padding: '1rem', background: '#1e293b' } },
-    createElement('a', { attributes: { href: '/', 'data-link': '' }, style: { color: '#fff' } }, 'Home (Static)'),
-    createElement('a', { attributes: { href: '/login', 'data-link': '' }, style: { color: '#fff' } }, 'Login'),
-    createElement('a', { attributes: { href: '/user/42', 'data-link': '' }, style: { color: '#fff' } }, 'User 42 (Dynamic)'),
-    createElement('a', { attributes: { href: '/dashboard', 'data-link': '' }, style: { color: '#fff' } }, 'Dashboard (Protected)'),
-    createElement('a', { attributes: { href: '/drag-demo', 'data-link': '' }, style: { color: '#fff' } }, 'Drag Demo')
-  );
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
-export function LoginPage(router: Router): HTMLElement {
+export function Navigation(router: RouterInstance): HTMLElement {
+  const nav = createElement(
+    'nav',
+    { style: { display: 'flex', gap: '1rem', padding: '1rem', background: '#1e293b', alignItems: 'center', flexWrap: 'wrap' } }
+  );
+
+  const render = () => {
+    nav.innerHTML = '';
+
+    nav.appendChild(createElement('a', { attributes: { href: '/', 'data-link': '' }, style: { color: '#fff' } }, 'Home (Static)'));
+    nav.appendChild(createElement('a', { attributes: { href: '/user/42', 'data-link': '' }, style: { color: '#fff' } }, 'User 42 (Dynamic)'));
+    nav.appendChild(createElement('a', { attributes: { href: '/dashboard', 'data-link': '' }, style: { color: '#fff' } }, 'Dashboard (Protected)'));
+    nav.appendChild(createElement('a', { attributes: { href: '/drag-demo', 'data-link': '' }, style: { color: '#fff' } }, 'Drag Demo'));
+
+    if (!isAuthenticated) {
+      nav.appendChild(
+        createElement(
+          'a',
+          {
+            attributes: { href: '/login', 'data-link': '' },
+            style: { marginLeft: 'auto', color: '#fff', background: '#16a34a', padding: '0.6rem 1rem', borderRadius: '6px', textDecoration: 'none', fontWeight: '600' }
+          },
+          'Login'
+        )
+      );
+      return;
+    }
+
+    nav.appendChild(
+      createElement(
+        'button',
+        {
+          style: {
+            marginLeft: 'auto',
+            padding: '0.6rem 1rem',
+            cursor: 'pointer',
+            background: '#dc2626',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: '600'
+          },
+          on: {
+            click: () => {
+              setAuthenticated(false);
+              setRedirectAfterLogin(null);
+              bus.emit('toast', { message: 'You have been logged out', type: 'info' });
+              router.navigate('/');
+            }
+          }
+        },
+        'Log Out'
+      )
+    );
+  };
+
+  bus.on('user:authenticated', () => {
+    render();
+  });
+
+  render();
+  return nav;
+}
+
+export function LoginPage(router: RouterInstance): HTMLElement {
   const form = createElement(
     'form',
     {
-      style: { maxWidth: '420px', margin: '2rem auto', display: 'grid', gap: '1rem', padding: '1.5rem', border: '1px solid #cbd5e1', borderRadius: '8px' },
+      style: { maxWidth: '420px', margin: '2rem auto', display: 'grid', gap: '1rem', padding: '1.5rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#fff' },
       on: {
         submit: (e) => {
           e.preventDefault();
-          setAuthenticated(true);
 
-          const redirectTarget = getRedirectAfterLogin() || '/';
+          const target = e.currentTarget as HTMLFormElement;
+          const emailInput = target.querySelector('input[name="email"]') as HTMLInputElement | null;
+          const passwordInput = target.querySelector('input[name="password"]') as HTMLInputElement | null;
+          const rememberInput = target.querySelector('input[name="remember"]') as HTMLInputElement | null;
+          const errorBox = target.querySelector('[data-error]') as HTMLElement | null;
+
+          const email = emailInput?.value.trim() ?? '';
+          const password = passwordInput?.value ?? '';
+          const remember = rememberInput?.checked ?? false;
+
+          if (!email || !isValidEmail(email)) {
+            if (errorBox) {
+              errorBox.textContent = 'Please enter a valid email address.';
+              errorBox.style.display = 'block';
+            }
+            return;
+          }
+
+          if (password.length < 6) {
+            if (errorBox) {
+              errorBox.textContent = 'Password must be at least 6 characters long.';
+              errorBox.style.display = 'block';
+            }
+            return;
+          }
+
+          const redirectTarget = getRedirectAfterLogin() || '/dashboard';
+          setRememberMe(remember);
+          setAuthenticated(true, remember);
           setRedirectAfterLogin(null);
 
           bus.emit('toast', { message: 'Login successful', type: 'info' });
           router.navigate(redirectTarget);
         }
       }
-    },
-    createElement('h1', {}, 'Login'),
-    createElement('label', {},
-      'Email',
-      createElement('input', {
-        attributes: { type: 'email', value: 'demo@example.com', placeholder: 'demo@example.com' },
-        style: { width: '100%', padding: '0.75rem', marginTop: '0.5rem' }
-      })
-    ),
-    createElement('label', {},
-      'Password',
-      createElement('input', {
-        attributes: { type: 'password', value: 'password123', placeholder: 'Password' },
-        style: { width: '100%', padding: '0.75rem', marginTop: '0.5rem' }
-      })
-    ),
+    }
+  );
+
+  const errorBox = createElement('p', {
+    style: { color: '#dc2626', margin: '0', display: 'none' },
+    attributes: { 'data-error': '' }
+  });
+
+  const emailInput = createElement('input', {
+    attributes: { type: 'email', name: 'email', placeholder: 'demo@example.com', required: '' },
+    style: { width: '100%', padding: '0.75rem', marginTop: '0.5rem' }
+  });
+
+  const passwordInput = createElement('input', {
+    attributes: { type: 'password', name: 'password', placeholder: 'Password', required: '' },
+    style: { width: '100%', padding: '0.75rem', marginTop: '0.5rem' }
+  });
+
+  const rememberInput = createElement('input', {
+    attributes: { type: 'checkbox', name: 'remember' },
+    style: { marginRight: '0.5rem' }
+  });
+  rememberInput.checked = getRememberMe();
+
+  form.appendChild(createElement('h1', {}, 'Login'));
+  form.appendChild(errorBox);
+  form.appendChild(createElement('label', {}, 'Email', emailInput));
+  form.appendChild(createElement('label', {}, 'Password', passwordInput));
+  form.appendChild(
+    createElement(
+      'label',
+      { style: { display: 'flex', alignItems: 'center' } },
+      rememberInput,
+      'Remember me'
+    )
+  );
+  form.appendChild(
     createElement(
       'button',
       {
@@ -60,7 +172,7 @@ export function LoginPage(router: Router): HTMLElement {
   return form;
 }
 
-export function HomePage(router: Router): HTMLElement {
+export function HomePage(router: RouterInstance): HTMLElement {
   return createElement(
     'div',
     { style: { padding: '1rem' } },
@@ -73,18 +185,10 @@ export function HomePage(router: Router): HTMLElement {
         on: {
           click: () => {
             if (isAuthenticated) {
-              const nextValue = !isAuthenticated;
-              setAuthenticated(nextValue);
-
-              const redirectTarget = nextValue ? getRedirectAfterLogin() || '/' : '/';
+              setAuthenticated(false);
               setRedirectAfterLogin(null);
-
-              bus.emit('toast', {
-                message: `User is now ${nextValue ? 'Logged In' : 'Logged Out'}`,
-                type: 'info'
-              });
-
-              router.navigate(redirectTarget);
+              bus.emit('toast', { message: 'You have been logged out', type: 'info' });
+              router.navigate('/');
               return;
             }
 
