@@ -1,3 +1,6 @@
+import '../css/theme.css';
+import '../css/style.css';
+import '../css/ui/Toast.css';
 import { createRouter } from './router/router';
 import { createElement } from './lib/dom';
 import { AppLayout } from './components/layout';
