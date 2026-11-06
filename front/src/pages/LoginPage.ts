@@ -3,7 +3,6 @@ import {
   bus,
   getRedirectAfterLogin,
   getRememberMe,
-  isAuthenticated,
   setAuthenticated,
   setRedirectAfterLogin,
   setRememberMe
@@ -15,94 +14,111 @@ function isValidEmail(value: string): boolean {
 }
 
 export function LoginPage(router: RouterInstance): HTMLElement {
-  const form = createElement(
-    'form',
-    {
-      style: { maxWidth: '420px', margin: '2rem auto', display: 'grid', gap: '1rem', padding: '1.5rem', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#fff' },
-      on: {
-        submit: (e) => {
-          e.preventDefault();
+  const shell = createElement('div', { className: 'page-shell login-shell' });
 
-          const target = e.currentTarget as HTMLFormElement;
-          const emailInput = target.querySelector('input[name="email"]') as HTMLInputElement | null;
-          const passwordInput = target.querySelector('input[name="password"]') as HTMLInputElement | null;
-          const rememberInput = target.querySelector('input[name="remember"]') as HTMLInputElement | null;
-          const errorBox = target.querySelector('[data-error]') as HTMLElement | null;
+  const visual = createElement('div', { className: 'login-visual' });
+  visual.appendChild(createElement('span', { className: 'pill' }, 'Welcome back'));
+  visual.appendChild(createElement('h2', {}, 'Keep the farm in sync.'));
+  visual.appendChild(
+    createElement(
+      'p',
+      {},
+      'Access real-time operations, team updates, and inventory data without leaving the field.'
+    )
+  );
 
-          const email = emailInput?.value.trim() ?? '';
-          const password = passwordInput?.value ?? '';
-          const remember = rememberInput?.checked ?? false;
+  const points = createElement('ul', { className: 'login-points' });
+  ['Live field metrics', 'Task coordination', 'Secure workforce access'].forEach((item) => {
+    const row = createElement('li');
+    row.appendChild(createElement('span', { className: 'point-dot' }));
+    row.appendChild(createElement('span', {}, item));
+    points.appendChild(row);
+  });
+  visual.appendChild(points);
 
-          if (!email || !isValidEmail(email)) {
-            if (errorBox) {
-              errorBox.textContent = 'Please enter a valid email address.';
-              errorBox.style.display = 'block';
-            }
-            return;
+  const form = createElement('form', {
+    className: 'login-card form-grid',
+    on: {
+      submit: (e) => {
+        e.preventDefault();
+
+        const target = e.currentTarget as HTMLFormElement;
+        const emailInput = target.querySelector('input[name="email"]') as HTMLInputElement | null;
+        const passwordInput = target.querySelector('input[name="password"]') as HTMLInputElement | null;
+        const rememberInput = target.querySelector('input[name="remember"]') as HTMLInputElement | null;
+        const errorBox = target.querySelector('[data-error]') as HTMLElement | null;
+
+        const email = emailInput?.value.trim() ?? '';
+        const password = passwordInput?.value ?? '';
+        const remember = rememberInput?.checked ?? false;
+
+        if (!email || !isValidEmail(email)) {
+          if (errorBox) {
+            errorBox.textContent = 'Please enter a valid email address.';
+            errorBox.classList.add('is-visible');
           }
-
-          if (password.length < 6) {
-            if (errorBox) {
-              errorBox.textContent = 'Password must be at least 6 characters long.';
-              errorBox.style.display = 'block';
-            }
-            return;
-          }
-
-          const redirectTarget = getRedirectAfterLogin() || '/dashboard';
-          setRememberMe(remember);
-          setAuthenticated(true, remember);
-          setRedirectAfterLogin(null);
-
-          bus.emit('toast', { message: 'Login successful', type: 'info' });
-          router.navigate(redirectTarget);
+          return;
         }
+
+        if (password.length < 6) {
+          if (errorBox) {
+            errorBox.textContent = 'Password must be at least 6 characters long.';
+            errorBox.classList.add('is-visible');
+          }
+          return;
+        }
+
+        const redirectTarget = getRedirectAfterLogin() || '/dashboard';
+        setRememberMe(remember);
+        setAuthenticated(true, remember);
+        setRedirectAfterLogin(null);
+
+        bus.emit('toast', { message: 'Login successful', type: 'info' });
+        router.navigate(redirectTarget);
       }
     }
-  );
+  });
+
+  form.appendChild(createElement('h1', { className: 'page-title' }, 'Sign in'));
+  form.appendChild(createElement('p', { className: 'page-subtitle' }, 'Access your workspace securely.'));
 
   const errorBox = createElement('p', {
-    style: { color: '#dc2626', margin: '0', display: 'none' },
+    className: 'form-error',
     attributes: { 'data-error': '' }
   });
-
-  const emailInput = createElement('input', {
-    attributes: { type: 'email', name: 'email', placeholder: 'demo@example.com', required: '' },
-    style: { width: '100%', padding: '0.75rem', marginTop: '0.5rem' }
-  });
-
-  const passwordInput = createElement('input', {
-    attributes: { type: 'password', name: 'password', placeholder: 'Password', required: '' },
-    style: { width: '100%', padding: '0.75rem', marginTop: '0.5rem' }
-  });
-
-  const rememberInput = createElement('input', {
-    attributes: { type: 'checkbox', name: 'remember' },
-    style: { marginRight: '0.5rem' }
-  });
-  rememberInput.checked = getRememberMe();
-
-  form.appendChild(createElement('h1', {}, 'Login'));
   form.appendChild(errorBox);
-  form.appendChild(createElement('label', {}, 'Email', emailInput));
-  form.appendChild(createElement('label', {}, 'Password', passwordInput));
-  form.appendChild(
-    createElement(
-      'label',
-      { style: { display: 'flex', alignItems: 'center' } },
-      rememberInput,
-      'Remember me'
-    )
-  );
-  form.appendChild(
-    createElement(
-      'button',
-      {
-        style: { padding: '0.75rem 1rem', cursor: 'pointer', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px' }
-      },
-      'Log In'
-    )
-  );
 
-  return form;
+  const emailRow = createElement('div', { className: 'form-row' });
+  const emailLabel = createElement('label', { className: 'form-label' }, 'Email address');
+  const emailInput = createElement('input', {
+    className: 'form-input',
+    attributes: { type: 'email', name: 'email', placeholder: 'demo@example.com', required: '' }
+  });
+  emailRow.appendChild(emailLabel);
+  emailRow.appendChild(emailInput);
+  form.appendChild(emailRow);
+
+  const passwordRow = createElement('div', { className: 'form-row' });
+  const passwordLabel = createElement('label', { className: 'form-label' }, 'Password');
+  const passwordInput = createElement('input', {
+    className: 'form-input',
+    attributes: { type: 'password', name: 'password', placeholder: '••••••••', required: '' }
+  });
+  passwordRow.appendChild(passwordLabel);
+  passwordRow.appendChild(passwordInput);
+  form.appendChild(passwordRow);
+
+  const remember = createElement('label', { className: 'checkbox-row' });
+  const rememberInput = createElement('input', { attributes: { type: 'checkbox', name: 'remember' } });
+  rememberInput.checked = getRememberMe();
+  remember.appendChild(rememberInput);
+  remember.appendChild(createElement('span', {}, 'Keep me signed in'));
+  form.appendChild(remember);
+
+  const submit = createElement('button', { className: 'form-submit', attributes: { type: 'submit' } }, 'Log in');
+  form.appendChild(submit);
+
+  shell.appendChild(visual);
+  shell.appendChild(form);
+  return shell;
 }
