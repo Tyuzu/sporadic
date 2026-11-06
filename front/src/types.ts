@@ -30,7 +30,7 @@ export interface RouteContext {
   pathname: string;
 }
 
-export type Middleware = (ctx: RouteContext) => boolean | Promise<boolean> | string;
+export type Middleware = (ctx: RouteContext) => boolean | string | Promise<boolean | string>;
 export type RouteHandler = (ctx: RouteContext) => HTMLElement | Promise<HTMLElement>;
 
 export interface Route {
