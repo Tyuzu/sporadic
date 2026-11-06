@@ -1,6 +1,6 @@
-import { createElement } from '../lib/dom';
-import { bus, isAuthenticated, setAuthenticated, setRedirectAfterLogin } from '../state/store';
-import type { RouterInstance } from '../router/router';
+import { createElement } from '../../lib/dom';
+import { bus, isAuthenticated, setAuthenticated, setRedirectAfterLogin } from '../../state/store';
+import type { RouterInstance } from '../../router/router';
 
 export function Navigation(router: RouterInstance): HTMLElement {
   const nav = createElement(

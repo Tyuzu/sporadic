@@ -1,5 +1,5 @@
-import { createElement } from '../lib/dom';
-import { bus } from '../state/store';
+import { createElement } from '../../lib/dom';
+import { bus } from '../../state/store';
 
 export function ToastContainer(): HTMLElement {
   const toastEl = createElement('div', {

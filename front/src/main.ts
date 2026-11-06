@@ -1,8 +1,8 @@
-import { createRouter } from './src/router/router';
-import { createElement } from './src/lib/dom';
-import { AppLayout } from './src/components/layout';
-import { ToastContainer } from './src/ui';
-import { registerRoutes } from './src/router/routes';
+import { createRouter } from './router/router';
+import { createElement } from './lib/dom';
+import { AppLayout } from './components/layout';
+import { ToastContainer } from './components/ui';
+import { registerRoutes } from './router/routes';
 
 async function bootstrap() {
   const app = document.getElementById('app') || document.body;
