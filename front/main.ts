@@ -1,5 +1,6 @@
 import { createRouter } from './src/router/router';
 import { createElement } from './src/lib/dom';
+import { registerRoutes } from './src/router/routes';
 
 async function bootstrap() {
   const { Navigation, ToastContainer } = await import('./src/components/views');
@@ -12,31 +13,7 @@ async function bootstrap() {
   app.appendChild(mainView);
   app.appendChild(toast);
 
-  router
-    .add('/', async () => {
-      const { HomePage } = await import('./src/components/views');
-      return HomePage(router);
-    })
-    .add('/login', async () => {
-      const { LoginPage } = await import('./src/components/views');
-      return LoginPage(router);
-    })
-    .add('/user/:id', async (ctx) => {
-      const { UserPage } = await import('./src/components/views');
-      return UserPage(ctx);
-    })
-    .add('/dashboard', async () => {
-      const { DashboardPage } = await import('./src/components/views');
-      return DashboardPage();
-    }, [async (ctx) => {
-      const { authGuard } = await import('./src/middleware/authGuard');
-      return authGuard(ctx);
-    }])
-    .add('/drag-demo', async () => {
-      const { DragDemoPage } = await import('./src/components/views');
-      return DragDemoPage();
-    });
-
+  registerRoutes(router);
   router.navigate(window.location.pathname);
 }
 
